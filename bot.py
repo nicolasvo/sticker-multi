@@ -3,7 +3,7 @@ import json
 import os
 
 import requests
-from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ContextTypes,
@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from user import User
-from sticker import add_sticker, add_sticker_pack, delete_sticker
+from sticker import add_sticker, delete_sticker, make_original_image
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
 TOKEN = os.getenv("BOT_API_TOKEN")
@@ -22,13 +22,15 @@ TOKEN = os.getenv("BOT_API_TOKEN")
 def make_keyboard(message_id):
     keyboard = [
         [
-            InlineKeyboardButton("Make sticker", callback_data=f"sticker_{message_id}"),
+            InlineKeyboardButton("Yes", callback_data=f"yes_{message_id}"),
+            InlineKeyboardButton("No", callback_data=f"no_{message_id}"),
         ],
-        # [
-        #     InlineKeyboardButton(
-        #         "Make sticker w/ original picture", callback_data=f"origin_{message_id}"
-        #     ),
-        # ],
+        [
+            InlineKeyboardButton(
+                "Make sticker w/ original picture",
+                callback_data=f"original_{message_id}",
+            ),
+        ],
         [
             InlineKeyboardButton(
                 "Send sticker as file", callback_data=f"file_{message_id}"
@@ -77,6 +79,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         user_message_id = f"{user.id}_{update.message.id}"
         input_path = f"/tmp/{user_message_id}_input.jpeg"
         output_path = f"/tmp/{user_message_id}_output.png"
+        output_original_path = f"/tmp/{user_message_id}_output_original.png"
 
         file_id = update.message.photo[-1].file_id
         media_message = await context.bot.get_file(file_id)
@@ -84,10 +87,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         try:
             request_rembg(input_path, output_path)
-            await update.message.reply_photo(
-                open(output_path, "rb"),
+            await add_sticker(
+                user,
+                update.get_bot(),
+                output_path,
+            )
+            await update.message.reply_text(
+                "Do you want to add this sticker? ✍️",
                 reply_markup=reply_markup,
-                caption="Do you want to make a sticker? ✨",
+            )
+            make_original_image(
+                input_path,
+                output_original_path,
             )
         except Exception as e:
             await update.message.reply_text(str(e))
@@ -104,39 +115,46 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user_message_id = f"{user.id}_{query.data.split('_')[-1]}"
     input_path = f"/tmp/{user_message_id}_input.jpeg"
     output_path = f"/tmp/{user_message_id}_output.png"
-    if not os.path.exists(output_path):
-        print(f"file {output_path} not found")
-        await query.edit_message_caption(f"Sorry, request expired, send picture again")
-        return
+    output_original_path = f"/tmp/{user_message_id}_output_original.png"
     data = query.data.split("_")[0]
-    bot = update.get_bot()
-    if data == "sticker":
-        await query.edit_message_caption(f"You chose to make sticker")
-        try:
-            print("add sticker")
-            await add_sticker(user, bot, output_path)
-            sticker_set = await bot.get_sticker_set(user.sticker_set_name)
-            await bot.send_sticker(
-                user.chat_id,
-                sticker_set.stickers[-1],
+
+    if data == "yes":
+        await query.message.edit_text("Sticker added 👌")
+    elif data == "no":
+        await delete_sticker(update)
+        await query.message.edit_text("Sticker discarded 🤌")
+    elif data == "original":
+        if not os.path.exists(output_original_path):
+            print(f"file {output_original_path} not found")
+            await query.edit_message_caption(
+                f"Sorry, request expired, send picture again 👇"
             )
-        except Exception as e:
-            print("add sticker pack")
-            print(f"exception: {e}")
-            await add_sticker_pack(user, bot, output_path)
-            sticker_set = await bot.get_sticker_set(user.sticker_set_name)
-            await bot.send_sticker(
-                user.chat_id,
-                sticker_set.stickers[-1],
-            )
-    # elif data == "origin":
-    #     await query.message.reply_document(open(output_path, "rb"))
+            return
+        await delete_sticker(update)
+        await add_sticker(
+            user,
+            update.get_bot(),
+            output_original_path,
+        )
+        await query.message.edit_text("Original sticker added ✌")
     elif data == "file":
+        if not os.path.exists(output_path):
+            print(f"file {output_path} not found")
+            await query.edit_message_caption(
+                f"Sorry, request expired, send picture again 👇"
+            )
+            return
+        await delete_sticker(update)
+        await query.edit_message_text("File sent 👍")
         await query.message.reply_document(open(output_path, "rb"))
+    os.remove(input_path) if os.path.exists(input_path) else None
+    os.remove(output_path) if os.path.exists(output_path) else None
+    os.remove(output_original_path) if os.path.exists(output_original_path) else None
 
 
 async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await delete_sticker(update)
+    await update.message.reply_text("Last sticker deleted 🥲")
 
 
 def main():

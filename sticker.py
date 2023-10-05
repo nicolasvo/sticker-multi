@@ -1,10 +1,12 @@
+import cv2
+import numpy as np
 from telegram import Update, InputSticker
 from telegram.constants import StickerFormat
 
-from user import User, Bot
+from user import User
 
 
-async def add_sticker_pack(user: User, bot: Bot, sticker_path: str) -> None:
+async def add_sticker_pack(user: User, bot, sticker_path: str) -> None:
     await bot.create_new_sticker_set(
         user.id,
         user.sticker_set_name,
@@ -15,7 +17,27 @@ async def add_sticker_pack(user: User, bot: Bot, sticker_path: str) -> None:
     print("Sticker set created")
 
 
-async def add_sticker(user: User, bot, sticker_path: str) -> None:
+async def add_sticker(user, bot, output_path):
+    try:
+        print("add sticker")
+        await add_sticker_(user, bot, output_path)
+        sticker_set = await bot.get_sticker_set(user.sticker_set_name)
+        await bot.send_sticker(
+            user.chat_id,
+            sticker_set.stickers[-1],
+        )
+    except Exception as e:
+        print("add sticker pack")
+        print(f"exception: {e}")
+        await add_sticker_pack(user, bot, output_path)
+        sticker_set = await bot.get_sticker_set(user.sticker_set_name)
+        await bot.send_sticker(
+            user.chat_id,
+            sticker_set.stickers[-1],
+        )
+
+
+async def add_sticker_(user: User, bot, sticker_path: str) -> None:
     await bot.add_sticker_to_set(
         user.id, user.sticker_set_name, InputSticker(open(sticker_path, "rb"), "🍟")
     )
@@ -30,6 +52,45 @@ async def delete_sticker(update: Update) -> None:
         last_sticker = sticker_set.stickers[-1].file_id
         await bot.delete_sticker_from_set(last_sticker)
         print("Sticker deleted")
-        await update.message.reply_text("Last sticker deleted! 🥲")
     else:
-        await update.message.reply_text("Can't delete, no sticker left in pack")
+        await update.message.reply_text("Can't delete, no sticker left in pack 👎")
+
+
+def make_original_image(input_path, output_path):
+    image = cv2.imread(input_path)
+    image = rescale_image(image)
+    cv2.imwrite(output_path, image)
+
+
+def rescale_image(image, px=512, padding=0):
+    height, width, _ = image.shape
+    if [height, width].index(max([height, width])) == 0:
+        factor = px / height
+        height = px
+        width = int(width * factor)
+    else:
+        factor = px / width
+        width = px
+        height = int(height * factor)
+
+    image_resized = cv2.resize(
+        image, dsize=(width, height), interpolation=cv2.INTER_LINEAR
+    )
+
+    # Create a larger canvas with the same number of channels as the input image
+    padded_height = height + 2 * padding
+    padded_width = width + 2 * padding
+    padded_image = np.zeros(
+        (padded_height, padded_width, image.shape[2]), dtype=np.uint8
+    )
+
+    # Calculate the position to place the resized image in the center
+    x_offset = (padded_width - width) // 2
+    y_offset = (padded_height - height) // 2
+
+    # Place the resized image in the center of the padded canvas
+    padded_image[
+        y_offset : y_offset + height, x_offset : x_offset + width
+    ] = image_resized
+
+    return padded_image
