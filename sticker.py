@@ -94,3 +94,17 @@ def rescale_image(image, px=512, padding=0):
     ] = image_resized
 
     return padded_image
+
+
+def compress_image(input_path, output_path):
+    # Load the original PNG image
+    original_image = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
+
+    # Define the compression parameters for PNG (lossless compression)
+    compression_params = [
+        cv2.IMWRITE_PNG_COMPRESSION,
+        9,
+    ]  # 0 (no compression) to 9 (max compression)
+
+    # Compress and save the image as PNG
+    cv2.imwrite(output_path, original_image, compression_params)

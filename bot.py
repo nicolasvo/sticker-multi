@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from user import User
-from sticker import add_sticker, delete_sticker, make_original_image
+from sticker import add_sticker, delete_sticker, make_original_image, compress_image
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
 TOKEN = os.getenv("BOT_API_TOKEN")
@@ -91,6 +91,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             image_base64 = request_rembg(input_path)
             base64_to_image(image_base64, output_path)
             base64_to_image(image_base64, output_png_path)
+            compress_image(output_path, output_path)
             await update.message.reply_text(
                 "Do you want to add this sticker? ✍️",
             )
