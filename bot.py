@@ -169,6 +169,12 @@ async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text("Last sticker deleted 🥲")
 
 
+async def handle_pack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = User(update)
+    link = f"https://t.me/addstickers/{user.sticker_set_name}"
+    await update.message.reply_text(f"Link to sticker pack: {link}")
+
+
 def main():
     # application = Application.builder().token(TOKEN).build()
     application = Application.builder().token(TOKEN).concurrent_updates(10).build()
@@ -189,6 +195,9 @@ def main():
     )
     application.add_handler(
         MessageHandler(filters.COMMAND & filters.Regex(r"/delete"), handle_delete)
+    )
+    application.add_handler(
+        MessageHandler(filters.COMMAND & filters.Regex(r"/getpack"), handle_pack)
     )
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
