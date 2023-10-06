@@ -53,7 +53,7 @@ def base64_to_image(base64_string, output_file_path):
         image_file.write(decoded_image)
 
 
-def request_rembg(input_path, output_path):
+def request_rembg(input_path):
     payload = {
         "image": image_to_base64(input_path),
     }
@@ -62,7 +62,7 @@ def request_rembg(input_path, output_path):
     r = requests.post(url, json=payload, timeout=600)
     print("request completed")
     image_base64 = json.loads(r.content)["image"]
-    base64_to_image(image_base64, output_path)
+    return image_base64
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -78,22 +78,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         reply_markup = make_keyboard(update.message.id)
         user_message_id = f"{user.id}_{update.message.id}"
         input_path = f"/tmp/{user_message_id}_input.jpeg"
-        output_path = f"/tmp/{user_message_id}_output.png"
-        output_original_path = f"/tmp/{user_message_id}_output_original.png"
+        output_path = f"/tmp/{user_message_id}_output.webp"
+        output_png_path = f"/tmp/{user_message_id}_output.png"
+        output_original_path = f"/tmp/{user_message_id}_output_original.webp"
 
         file_id = update.message.photo[-1].file_id
         media_message = await context.bot.get_file(file_id)
         await media_message.download_to_drive(input_path)
 
         try:
-            request_rembg(input_path, output_path)
-            await add_sticker(
-                user,
-                update.get_bot(),
-                output_path,
-            )
+            bot = update.get_bot()
+            image_base64 = request_rembg(input_path)
+            base64_to_image(image_base64, output_path)
+            base64_to_image(image_base64, output_png_path)
             await update.message.reply_text(
                 "Do you want to add this sticker? ✍️",
+            )
+            await bot.send_sticker(
+                user.id,
+                output_path,
                 reply_markup=reply_markup,
             )
             make_original_image(
@@ -114,41 +117,49 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.answer()
     user_message_id = f"{user.id}_{query.data.split('_')[-1]}"
     input_path = f"/tmp/{user_message_id}_input.jpeg"
-    output_path = f"/tmp/{user_message_id}_output.png"
-    output_original_path = f"/tmp/{user_message_id}_output_original.png"
+    output_path = f"/tmp/{user_message_id}_output.webp"
+    output_png_path = f"/tmp/{user_message_id}_output.png"
+    output_original_path = f"/tmp/{user_message_id}_output_original.webp"
     data = query.data.split("_")[0]
 
     if data == "yes":
-        await query.message.edit_text("Sticker added 👌")
+        await query.delete_message()
+        await query.message.reply_text("Sticker added 👌")
+        await add_sticker(
+            user,
+            update.get_bot(),
+            output_path,
+        )
     elif data == "no":
-        await delete_sticker(update)
-        await query.message.edit_text("Sticker discarded 🤌")
+        await query.delete_message()
+        await query.message.reply_text("Sticker discarded 🤌")
     elif data == "original":
         if not os.path.exists(output_original_path):
             print(f"file {output_original_path} not found")
-            await query.edit_message_caption(
+            await query.message.reply_text(
                 f"Sorry, request expired, send picture again 👇"
             )
             return
-        await delete_sticker(update)
+        await query.delete_message()
+        await query.message.reply_text("Original sticker added ✌")
         await add_sticker(
             user,
             update.get_bot(),
             output_original_path,
         )
-        await query.message.edit_text("Original sticker added ✌")
     elif data == "file":
-        if not os.path.exists(output_path):
-            print(f"file {output_path} not found")
-            await query.edit_message_caption(
+        if not os.path.exists(output_png_path):
+            print(f"file {output_png_path} not found")
+            await query.message.reply_text(
                 f"Sorry, request expired, send picture again 👇"
             )
             return
-        await delete_sticker(update)
-        await query.edit_message_text("File sent 👍")
-        await query.message.reply_document(open(output_path, "rb"))
+        await query.delete_message()
+        await query.message.reply_text("File sent 👍")
+        await query.message.reply_document(open(output_png_path, "rb"))
     os.remove(input_path) if os.path.exists(input_path) else None
     os.remove(output_path) if os.path.exists(output_path) else None
+    os.remove(output_png_path) if os.path.exists(output_png_path) else None
     os.remove(output_original_path) if os.path.exists(output_original_path) else None
 
 
