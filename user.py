@@ -14,7 +14,7 @@ class User:
         bot = update.get_bot()
         self.bot_username = bot.username
         self.sticker_set_name = self.get_sticker_set_name()
-        self.sticker_set_title = f"{self.firstname} ✨"
+        self.sticker_set_title = f"{self.firstname} 🐶"
         self.emoji = "🇫🇷"
 
     def get_sticker_set_name(self, pack_number=0):
