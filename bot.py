@@ -195,12 +195,10 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     if data == "sam":
         os.rename(input_path, input_sam_path)
-        await query.delete_message()
         await query.message.reply_text(
             "Write what you want to cut.\nFor example: person left and brown cat 🖖"
         )
     elif data == "again":
-        await query.delete_message()
         await query.message.reply_text(
             "Write what you want to cut.\nFor example: person left and brown cat 🖖"
         )
