@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from telegram import Update, InputSticker
 from telegram.constants import StickerFormat
+from telegram.error import BadRequest
 
 from user import User
 
@@ -44,14 +45,18 @@ async def add_sticker_(user: User, bot, sticker_path: str) -> None:
     print("Sticker added")
 
 
-async def delete_sticker(update: Update) -> None:
+async def delete_sticker(update: Update, sticker_id) -> None:
     user = User(update)
     bot = update.get_bot()
     sticker_set = await bot.get_sticker_set(user.sticker_set_name)
     if len(sticker_set.stickers) > 0:
-        last_sticker = sticker_set.stickers[-1].file_id
-        await bot.delete_sticker_from_set(last_sticker)
-        print("Sticker deleted")
+        try:
+            await bot.delete_sticker_from_set(sticker_id)
+            await update.message.reply_text("Sticker deleted 🥲")
+        except BadRequest as e:
+            await update.message.reply_text(
+                "Can't delete, sticker does not belong to this pack 👎"
+            )
     else:
         await update.message.reply_text("Can't delete, no sticker left in pack 👎")
 

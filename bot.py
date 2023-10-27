@@ -4,7 +4,7 @@ import os
 import re
 
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import (
     Application,
     ContextTypes,
@@ -250,8 +250,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await delete_sticker(update)
-    await update.message.reply_text("Last sticker deleted 🥲")
+    await update.message.reply_text(
+        "Send me a sticker you want to delete 🤲", reply_markup=ForceReply()
+    )
+
+
+async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message.sticker:
+        await delete_sticker(update, update.message.sticker.file_id)
 
 
 async def handle_pack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -284,6 +290,7 @@ def main():
     application.add_handler(
         MessageHandler(filters.COMMAND & filters.Regex(r"/getpack"), handle_pack)
     )
+    application.add_handler(MessageHandler(filters.REPLY, handle_sticker))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
