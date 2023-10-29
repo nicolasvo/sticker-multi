@@ -257,14 +257,12 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        "Send me a sticker you want to delete 🤲", reply_markup=ForceReply()
-    )
-
-
-async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message.sticker:
         await delete_sticker(update, update.message.sticker.file_id)
+    else:
+        await update.message.reply_text(
+            "Send me a sticker you want to delete 🤲", reply_markup=ForceReply()
+        )
 
 
 async def handle_pack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -274,8 +272,7 @@ async def handle_pack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 def main():
-    # application = Application.builder().token(TOKEN).build()
-    application = Application.builder().token(TOKEN).concurrent_updates(10).build()
+    application = Application.builder().token(TOKEN).concurrent_updates(True).build()
 
     # Add command handler
     application.add_handler(
@@ -292,12 +289,14 @@ def main():
         MessageHandler(filters.COMMAND & filters.Regex(r"/start"), start)
     )
     application.add_handler(
-        MessageHandler(filters.COMMAND & filters.Regex(r"/delete"), handle_delete)
-    )
-    application.add_handler(
         MessageHandler(filters.COMMAND & filters.Regex(r"/getpack"), handle_pack)
     )
-    application.add_handler(MessageHandler(filters.REPLY, handle_sticker))
+    application.add_handler(
+        MessageHandler(
+            filters.REPLY | (filters.COMMAND & filters.Regex(r"/delete")),
+            handle_delete,
+        )
+    )
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
