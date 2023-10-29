@@ -1,4 +1,4 @@
 python-telegram-bot
-requests
 opencv-python
 numpy
+aiohttp

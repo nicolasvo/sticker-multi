@@ -8,8 +8,10 @@ python-telegram-bot = "*"
 requests = "*"
 opencv-python = "*"
 numpy = "*"
+aiohttp = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.9"

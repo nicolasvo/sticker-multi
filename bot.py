@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-import requests
+import aiohttp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import (
     Application,
@@ -43,28 +43,36 @@ def list_files_sam(user_id):
     return filtered_files
 
 
-def request_rembg(input_path):
+async def make_async_post(url, data):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as response:
+            return await response.text()
+
+
+async def request_rembg(input_path):
     payload = {
         "image": image_to_base64(input_path),
     }
     url = os.getenv("API_URL_REMBG")
     print("making request")
-    r = requests.post(url, json=payload, timeout=600)
+    r = await make_async_post(url, json.dumps(payload))
     print("request completed")
-    image_base64 = json.loads(r.content)["image"]
+    j = json.loads(r)
+    image_base64 = j["image"]
     return image_base64
 
 
-def request_gsa(input_path, text_prompt):
+async def request_gsa(input_path, text_prompt):
     payload = {
         "image": image_to_base64(input_path),
         "text_prompt": text_prompt,
     }
     url = os.getenv("API_URL_GSA")
     print("making request")
-    r = requests.post(url, json=payload, timeout=600)
+    r = await make_async_post(url, json.dumps(payload))
     print("request completed")
-    image_base64 = json.loads(r.content)["image"]
+    j = json.loads(r)
+    image_base64 = j["image"]
     return image_base64
 
 
@@ -115,7 +123,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await media_message.download_to_drive(input_path)
 
         try:
-            image_base64 = request_rembg(input_path)
+            image_base64 = await request_rembg(input_path)
             base64_to_image(image_base64, output_path)
             base64_to_image(image_base64, output_png_path)
             compress_image(output_path, output_path)
@@ -156,8 +164,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 ],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-
-            image_base64 = request_gsa(f"/tmp/{files[0]}", update.message.text)
+            image_base64 = await request_gsa(f"/tmp/{files[0]}", update.message.text)
             if image_base64 == "":
                 await update.message.reply_text(
                     f"'{update.message.text}' was not detected in the image.\nTry to write another text prompt 🤞"
