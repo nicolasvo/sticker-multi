@@ -197,6 +197,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     output_path = f"/tmp/{user_message_id}_output.webp"
     output_png_path = f"/tmp/{user_message_id}_output.png"
     output_original_path = f"/tmp/{user_message_id}_output_original.webp"
+    input_copy_path = f"/tmp/{user_message_id}_copy.webp"
     files = list_files_sam(user.id)
     data = query.data.split("_")[0]
 
@@ -210,6 +211,12 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "Write what you want to cut.\nFor example: person left and brown cat 🖖"
         )
     elif data == "yes":
+        if not os.path.exists(output_path):
+            print(f"file {output_path} not found")
+            await query.message.reply_text(
+                f"Sorry, request expired, send picture again 👇"
+            )
+            return
         await query.delete_message()
         await query.message.reply_text("Sticker added 👌")
         await add_sticker(
@@ -250,10 +257,50 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await query.message.reply_document(open(output_png_path, "rb"))
         for f in files:
             os.remove(f"/tmp/{f}") if os.path.exists(f"/tmp/{f}") else None
+    elif data == "yescopy":
+        if not os.path.exists(input_copy_path):
+            print(f"file {input_copy_path} not found")
+            await query.message.reply_text(
+                f"Sorry, request expired, send picture again 👇"
+            )
+            return
+        await query.message.reply_text("Sticker copied to your pack 💅")
+        await add_sticker(
+            user,
+            update.get_bot(),
+            input_copy_path,
+        )
     os.remove(input_path) if os.path.exists(input_path) else None
     os.remove(output_path) if os.path.exists(output_path) else None
     os.remove(output_png_path) if os.path.exists(output_png_path) else None
     os.remove(output_original_path) if os.path.exists(output_original_path) else None
+    os.remove(input_copy_path) if os.path.exists(input_copy_path) else None
+
+
+async def handle_copy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message.sticker:
+        if update.message.sticker.is_animated or update.message.sticker.is_video:
+            await update.message.reply_text("Sticker can't be animated 🙅‍♀️")
+            return
+        user = User(update)
+        message_id = update.message.id
+        user_message_id = f"{user.id}_{update.message.id}"
+        input_copy_path = f"/tmp/{user_message_id}_copy.webp"
+        file_id = update.message.sticker.file_id
+        media_message = await context.bot.get_file(file_id)
+        await media_message.download_to_drive(input_copy_path)
+
+        keyboard = [
+            [
+                InlineKeyboardButton("Yes", callback_data=f"yescopy_{message_id}"),
+                InlineKeyboardButton("No", callback_data=f"no_{message_id}"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "Do you want to copy this sticker? 👆",
+            reply_markup=reply_markup,
+        )
 
 
 async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -295,6 +342,11 @@ def main():
         MessageHandler(
             filters.REPLY | (filters.COMMAND & filters.Regex(r"/delete")),
             handle_delete,
+        )
+    )
+    application.add_handler(
+        MessageHandler(
+            filters.ATTACHMENT & filters.FORWARDED & ~filters.REPLY, handle_copy
         )
     )
 
