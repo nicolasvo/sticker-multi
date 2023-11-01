@@ -298,8 +298,12 @@ async def handle_copy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "Do you want to copy this sticker? 👆",
+            "Do you want to copy this sticker to your pack? 👆",
             reply_markup=reply_markup,
+        )
+    elif update.message.text:
+        await update.message.reply_text(
+            "Forward me a sticker you want to copy to your sticker pack 🙌"
         )
 
 
@@ -346,7 +350,9 @@ def main():
     )
     application.add_handler(
         MessageHandler(
-            filters.ATTACHMENT & filters.FORWARDED & ~filters.REPLY, handle_copy
+            filters.ATTACHMENT & filters.FORWARDED & ~filters.REPLY
+            | filters.Regex(r"/copy"),
+            handle_copy,
         )
     )
 
