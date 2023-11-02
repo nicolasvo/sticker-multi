@@ -13,7 +13,7 @@ from telegram.ext import (
     filters,
 )
 
-from user import User
+from user import User, get_sticker_set_name
 from sticker import add_sticker, delete_sticker, make_original_image, compress_image
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
@@ -59,6 +59,7 @@ async def request_rembg(input_path):
         r = await make_async_post(url, json.dumps(payload))
         print("request completed")
         j = json.loads(r)
+        image_base64 = j["image"]
     except:
         r = await make_async_post(url, json.dumps(payload))
         print("request completed")
@@ -78,6 +79,7 @@ async def request_gsa(input_path, text_prompt):
         r = await make_async_post(url, json.dumps(payload))
         print("request completed")
         j = json.loads(r)
+        image_base64 = j["image"]
     except:
         r = await make_async_post(url, json.dumps(payload))
         print("request completed")
@@ -126,8 +128,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        print(user.sticker_set_name)
-        print(user.sticker_set_title)
         file_id = update.message.photo[-1].file_id
         media_message = await context.bot.get_file(file_id)
         await media_message.download_to_drive(input_path)
@@ -328,7 +328,8 @@ async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def handle_pack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = User(update)
-    link = f"https://t.me/addstickers/{user.sticker_set_name}"
+    sticker_set_name = await get_sticker_set_name(user, update.get_bot())
+    link = f"https://t.me/addstickers/{sticker_set_name}"
     await update.message.reply_text(f"Link to sticker pack: {link}")
 
 

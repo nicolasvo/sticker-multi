@@ -4,14 +4,17 @@ from telegram import Update, InputSticker
 from telegram.constants import StickerFormat
 from telegram.error import BadRequest
 
-from user import User
+from user import User, get_sticker_set_name
 
 
 async def add_sticker_pack(user: User, bot, sticker_path: str) -> None:
+    sticker_set_name = await get_sticker_set_name(user, bot)
+    sticker_set_title = f"{user.firstname} 🐶" if sticker_set_name.split("_")[1] == 0 \
+                        else f"{user.firstname} #{int(sticker_set_name.split('_')[1])+1} 🐶"
     await bot.create_new_sticker_set(
         user.id,
-        user.sticker_set_name,
-        user.sticker_set_title,
+        sticker_set_name,
+        sticker_set_title,
         [InputSticker(open(sticker_path, "rb"), "🍟")],
         sticker_format=StickerFormat.STATIC,
     )
@@ -19,10 +22,11 @@ async def add_sticker_pack(user: User, bot, sticker_path: str) -> None:
 
 
 async def add_sticker(user, bot, output_path):
+    sticker_set_name = await get_sticker_set_name(user, bot)
     try:
         print("add sticker")
         await add_sticker_(user, bot, output_path)
-        sticker_set = await bot.get_sticker_set(user.sticker_set_name)
+        sticker_set = await bot.get_sticker_set(sticker_set_name)
         await bot.send_sticker(
             user.chat_id,
             sticker_set.stickers[-1],
@@ -31,7 +35,7 @@ async def add_sticker(user, bot, output_path):
         print("add sticker pack")
         print(f"exception: {e}")
         await add_sticker_pack(user, bot, output_path)
-        sticker_set = await bot.get_sticker_set(user.sticker_set_name)
+        sticker_set = await bot.get_sticker_set(sticker_set_name)
         await bot.send_sticker(
             user.chat_id,
             sticker_set.stickers[-1],
@@ -39,26 +43,22 @@ async def add_sticker(user, bot, output_path):
 
 
 async def add_sticker_(user: User, bot, sticker_path: str) -> None:
+    sticker_set_name = await get_sticker_set_name(user, bot)
     await bot.add_sticker_to_set(
-        user.id, user.sticker_set_name, InputSticker(open(sticker_path, "rb"), "🍟")
+        user.id, sticker_set_name, InputSticker(open(sticker_path, "rb"), "🍟")
     )
     print("Sticker added")
 
 
 async def delete_sticker(update: Update, sticker_id) -> None:
-    user = User(update)
     bot = update.get_bot()
-    sticker_set = await bot.get_sticker_set(user.sticker_set_name)
-    if len(sticker_set.stickers) > 0:
-        try:
-            await bot.delete_sticker_from_set(sticker_id)
-            await update.message.reply_text("Sticker deleted 🥲")
-        except BadRequest as e:
-            await update.message.reply_text(
-                "Can't delete, sticker does not belong to this pack 👎"
-            )
-    else:
-        await update.message.reply_text("Can't delete, no sticker left in pack 👎")
+    try:
+        await bot.delete_sticker_from_set(sticker_id)
+        await update.message.reply_text("Sticker deleted 🥲")
+    except BadRequest as e:
+        await update.message.reply_text(
+            "Can't delete, sticker does not belong to this pack 👎"
+        )
 
 
 def make_original_image(input_path, output_path):

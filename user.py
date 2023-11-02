@@ -13,9 +13,16 @@ class User:
             self.firstname = update.message.from_user.first_name
         bot = update.get_bot()
         self.bot_username = bot.username
-        self.sticker_set_name = self.get_sticker_set_name()
-        self.sticker_set_title = f"{self.firstname} 🐶"
-        self.emoji = "🇫🇷"
 
-    def get_sticker_set_name(self, pack_number=0):
-        return f"w_{pack_number}_{self.id}_by_{self.bot_username}"
+
+async def get_sticker_set_name(user, bot, pack_number=0):
+    sticker_set_name = f"w_{pack_number}_{user.id}_by_{user.bot_username}"
+    try:
+        sticker_set = await bot.get_sticker_set(sticker_set_name)
+        if sticker_set:
+            if len(sticker_set.stickers) == 120:
+                pack_number += 1
+                return await get_sticker_set_name(user, bot, pack_number)
+            return sticker_set_name
+    except:
+        return sticker_set_name
