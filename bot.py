@@ -55,10 +55,15 @@ async def request_rembg(input_path):
     }
     url = os.getenv("API_URL_REMBG")
     print("making request")
-    r = await make_async_post(url, json.dumps(payload))
-    print("request completed")
-    j = json.loads(r)
-    image_base64 = j["image"]
+    try:
+        r = await make_async_post(url, json.dumps(payload))
+        print("request completed")
+        j = json.loads(r)
+    except:
+        r = await make_async_post(url, json.dumps(payload))
+        print("request completed")
+        j = json.loads(r)
+        image_base64 = j["image"]
     return image_base64
 
 
@@ -69,10 +74,15 @@ async def request_gsa(input_path, text_prompt):
     }
     url = os.getenv("API_URL_GSA")
     print("making request")
-    r = await make_async_post(url, json.dumps(payload))
-    print("request completed")
-    j = json.loads(r)
-    image_base64 = j["image"]
+    try:
+        r = await make_async_post(url, json.dumps(payload))
+        print("request completed")
+        j = json.loads(r)
+    except:
+        r = await make_async_post(url, json.dumps(payload))
+        print("request completed")
+        j = json.loads(r)
+        image_base64 = j["image"]
     return image_base64
 
 
