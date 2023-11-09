@@ -248,7 +248,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 f"Sorry, request expired, send picture again 👇"
             )
             return
-        await query.delete_message()
         await query.message.reply_text("Original sticker added ✌")
         await add_sticker(
             user,
@@ -262,7 +261,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 f"Sorry, request expired, send picture again 👇"
             )
             return
-        await query.delete_message()
         await query.message.reply_text("File sent 👍")
         await query.message.reply_document(open(output_png_path, "rb"))
         for f in files:
