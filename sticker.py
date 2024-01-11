@@ -9,7 +9,7 @@ from user import User, get_sticker_set_name
 
 async def add_sticker_pack(user: User, bot, sticker_path: str) -> None:
     sticker_set_name = await get_sticker_set_name(user, bot)
-    sticker_set_title = f"{user.firstname} 🐶" if sticker_set_name.split("_")[1] == 0 \
+    sticker_set_title = f"{user.firstname} 🐶" if sticker_set_name.split("_")[1] == "0" \
                         else f"{user.firstname} #{int(sticker_set_name.split('_')[1])+1} 🐶"
     await bot.create_new_sticker_set(
         user.id,
