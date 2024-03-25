@@ -122,7 +122,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             ],
             [
                 InlineKeyboardButton(
-                    "Write what to cut", callback_data=f"sam_{message_id}"
+                    "Write what to select", callback_data=f"sam_{message_id}"
                 ),
             ],
         ]
@@ -214,11 +214,11 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if data == "sam":
         os.rename(input_path, input_sam_path)
         await query.message.reply_text(
-            "Write what you want to cut.\nFor example: person left and brown cat 🖖"
+            "Write what you want to select from the image.\nFor example: person right, orange cat 🖖"
         )
     elif data == "again":
         await query.message.reply_text(
-            "Write what you want to cut.\nFor example: person left and brown cat 🖖"
+            "Write what you want to select from the image.\nFor example: person right, orange cat 🖖"
         )
     elif data == "yes":
         if not os.path.exists(output_path):
