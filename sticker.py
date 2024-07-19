@@ -9,14 +9,16 @@ from user import User, get_sticker_set_name
 
 async def add_sticker_pack(user: User, bot, sticker_path: str) -> None:
     sticker_set_name = await get_sticker_set_name(user, bot)
-    sticker_set_title = f"{user.firstname} 🐶" if sticker_set_name.split("_")[1] == "0" \
-                        else f"{user.firstname} #{int(sticker_set_name.split('_')[1])+1} 🐶"
+    sticker_set_title = (
+        f"{user.firstname} 🐶"
+        if sticker_set_name.split("_")[1] == "0"
+        else f"{user.firstname} #{int(sticker_set_name.split('_')[1])+1} 🐶"
+    )
     await bot.create_new_sticker_set(
         user.id,
         sticker_set_name,
         sticker_set_title,
-        [InputSticker(open(sticker_path, "rb"), "🍟")],
-        sticker_format=StickerFormat.STATIC,
+        [InputSticker(open(sticker_path, "rb"), "🍟", StickerFormat.STATIC)],
     )
     print("Sticker set created")
 
@@ -45,7 +47,9 @@ async def add_sticker(user, bot, output_path):
 async def add_sticker_(user: User, bot, sticker_path: str) -> None:
     sticker_set_name = await get_sticker_set_name(user, bot)
     await bot.add_sticker_to_set(
-        user.id, sticker_set_name, InputSticker(open(sticker_path, "rb"), "🍟")
+        user.id,
+        sticker_set_name,
+        InputSticker(open(sticker_path, "rb"), "🍟", StickerFormat.STATIC),
     )
     print("Sticker added")
 
@@ -94,9 +98,9 @@ def rescale_image(image, px=512, padding=0):
     y_offset = (padded_height - height) // 2
 
     # Place the resized image in the center of the padded canvas
-    padded_image[
-        y_offset : y_offset + height, x_offset : x_offset + width
-    ] = image_resized
+    padded_image[y_offset : y_offset + height, x_offset : x_offset + width] = (
+        image_resized
+    )
 
     return padded_image
 
