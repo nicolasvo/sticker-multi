@@ -1,10 +1,10 @@
-FROM python:3.10
+FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt update && apt install -y libgl1-mesa-glx
-COPY requirements.txt .
-COPY bot.py sticker.py user.py .
+RUN apt update && apt install -y libgl1-mesa-glx libglib2.0-0
+COPY requirements.txt /app/
+COPY bot.py sticker.py user.py /app/
 
 RUN pip install -r requirements.txt
 
