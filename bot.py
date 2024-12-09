@@ -359,8 +359,7 @@ def main():
     )
     application.add_handler(
         MessageHandler(
-            filters.ATTACHMENT & filters.FORWARDED & ~filters.REPLY
-            | filters.Regex(r"/copy"),
+            filters.ATTACHMENT & ~filters.REPLY | filters.Regex(r"/copy"),
             handle_copy,
         )
     )
